@@ -10,42 +10,49 @@ class Uptime:
     COMPONENT_STATUS_OPERATIONAL = 1  # operational
     INCIDENT_STATUS_INVESTIGATING = 1  # new incident status is investigating
     INCIDENT_STATUS_FIXED = 4  # updated incident status is fixed
-    DOWN = False  # flag for if the service is down
     NOTIFY = 1  # notify user
     VISIBLE = 1  # visible to public
 
-
-    # def __init__(self):
-        # stuff that's set to be global variable for now, might change later
-    name = 'Auth0 is down'  # name of incident
-    new_incident_message = 'This is a test for creating incident'  # message for new incident
-    update_incident_message = "This incident has be updated"  # message for update incident
-    url = 'https://empirelife-prod.auth0.com/testall'  # auth0 testall endpoint for getting status response
+    # stuff that's set to be global variable for now, might change later
     incident_url = 'http://35.196.174.157/api/v1/incidents?component_id=3&sort=id&order=desc&per_page=1'  # incident url
-    component_url = 'http://35.196.174.157/api/v1/components?name=auth0'  # url for auth0 component on cachet, search based on name
+    # url = 'https://empirelife-prod.auth0.com/testall'  # auth0 testall endpoint for getting status response
+
+
+    def __init__(self, name, url, expected_status):
+        self.url = url
+        self.name = name + ' is down.' # name of incident
+        self.new_incident_message = 'An new incident has been created for ' + name # message for new incident
+        self.update_incident_message = 'The incident for ' + name + ' has been updated' # message for update incident
+        self.component_url = 'http://35.196.174.157/api/v1/components?name='+ name # the component url for the passed in api, search based on name
+        self.expected_status = expected_status  #the expected response from the input url
+        self.FLAG  = False  # flag for if the service is down
+        print('after initialization: ',self.url)
+        print('after initialization: ', self.name)
+        print('after initialization: ', self.expected_status)
 
 
 
     def monitor_uptime (self):
         print('monitor_uptime CALLED')
-        print(Uptime.url)
-        print(type(Uptime.url))
-        response = Uptime.get_response(self,Uptime.url)
+        print(self.url)
+        print(type(self.url))
+        response = Uptime.get_response(self,self.url)
         print('RESPONSE', response)
 
         # if the service is up and the flag is set to DOWN, update the most recent incident
-        if response.status_code == 200:
-            if Uptime.DOWN == True:
-                component_id = Uptime.get_obj_id(self,Uptime.component_url)
+        if response.status_code == self.expected_status:
+
+            if self.FLAG == True:
+                component_id = Uptime.get_obj_id(self,self.component_url)
                 incident_id = Uptime.get_obj_id(self,'http://35.196.174.157/api/v1/incidents?component_id=' + str(
                     component_id) + '&sort=id&order=desc&per_page=1') #most recent incident
-                Uptime.updateincident(self, incident_id, Uptime.INCIDENT_STATUS_FIXED, Uptime.update_incident_message)
+                Uptime.updateincident(self, incident_id, Uptime.INCIDENT_STATUS_FIXED, self.update_incident_message)
 
         # if the service is down and the flag is set to UP, create a new incident
         else:
-            if Uptime.DOWN == False:
-                component_id = Uptime.get_obj_id(self,Uptime.component_url)
-                Uptime.createincident(self,Uptime.name, Uptime.new_incident_message,
+            if self.FLAG == False:
+                component_id = Uptime.get_obj_id(self,self.component_url)
+                Uptime.createincident(self,self.name, self.new_incident_message,
                                Uptime.INCIDENT_STATUS_INVESTIGATING, Uptime.NOTIFY,
                                Uptime.VISIBLE, component_id, Uptime.COMPONENT_STATUS_PARTIAL_OUTAGE)
 
@@ -90,8 +97,7 @@ class Uptime:
                                                   notify=notify
                                                   ))
         print('incident created')
-        global DOWN  # update flag
-        DOWN = True
+        self.FLAG= True  # update flag
 
     def updateincident(self,id, status, message):
         import cachetclient.cachet as cachet
@@ -103,9 +109,9 @@ class Uptime:
 
         print('incident updated')
 
-        Uptime.DOWN == False  # update flag
-        print('The flag is set to:',Uptime.DOWN)
-        component_id = Uptime.get_obj_id(self, Uptime.component_url)
+        self.FLAG = False  # update flag
+        print('The flag is set to:',self.FLAG)
+        component_id = Uptime.get_obj_id(self, self.component_url)
         # update
         Uptime.updatecomponent(component_id, Uptime.COMPONENT_STATUS_OPERATIONAL)
 
@@ -122,11 +128,10 @@ class Uptime:
 
 
 
-uptime = Uptime ()
-uptime.monitor_uptime()
 
 
-
+#uptime_for_auth0 = Uptime ('auth0', 'https://empirelife-prod.auth0.com/testall',200)
+#uptime_for_auth0.monitor_uptime()
 
 
 

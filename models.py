@@ -1,11 +1,8 @@
 from app import db
-from sqlalchemy import create_engine, MetaData, Table, Column, Integer
+from sqlalchemy import create_engine
 
 
 
-
-
-engine = create_engine()
 
 class Incident (db.Model):
     id = db.Column ('Incident ID', db.Integer, primary_key = True)
